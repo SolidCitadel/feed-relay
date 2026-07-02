@@ -1,0 +1,25 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# Kotlin/Java
+*.class
+out/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+.node/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# 환경/시크릿
+.env
+*.local
+
+# OS
+.DS_Store

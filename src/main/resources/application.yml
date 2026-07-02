@@ -1,0 +1,22 @@
+spring:
+  application:
+    name: feedrelay
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/feedrelay}
+    username: ${DB_USERNAME:feedrelay}
+    password: ${DB_PASSWORD:feedrelay}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  modulith:
+    events:
+      jdbc:
+        schema-initialization:
+          enabled: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
