@@ -114,5 +114,15 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
 
 ## 8.8 테스트 전략
 
-- **멱등성 시나리오가 1급 시민**: §10의 시나리오를 가짜 ical 서버(MockWebServer)+가짜 Tasks API 통합 테스트로 고정.
-- Modulith 경계 검증(`ModularityTests` — Docker 불요), Testcontainers(PG — Docker 없으면 자동 스킵).
+**두 무게중심** — 수량은 도메인 단위가 다수, 가치 서열은 §10 시나리오가 1급. 단일 피라미드가 아니다.
+
+| 층 | 도구 | 검증 대상 | Docker |
+|---|---|---|---|
+| 구조 | `ModularityTests` (Modulith verify) | 모듈 경계·순환·internal 접근 | 불요 |
+| 도메인 단위 | 순수 JUnit (스프링 무관) | 한 클래스 안의 불변식 — RuleEngine·파서·content_hash | 불요 |
+| 모듈 통합 | `@ApplicationModuleTest` | 모듈 내부 조립·이벤트 리스너 전달 (M3+ sync·notifications부터 실수요) | 필요 |
+| 시스템 시나리오 | `@SpringBootTest` + Testcontainers(PG) + 가짜 ical 서버(MockWebServer)·가짜 Tasks API | §10 Q1~Q8 — **멱등성 시나리오가 1급 시민** | 필요 |
+
+- **배치 판정**: 검증하려는 불변식이 한 클래스 안이면 도메인 단위, 모듈 조립·이벤트 전달이면 모듈 통합, §10 시나리오면 시스템. 위 층에서 잡히는 것을 아래 층에 중복 작성하지 않는다.
+- Docker 필요 층은 없으면 자동 스킵(`disabledWithoutDocker`) — 로컬 테스트 통과 ≠ 통합 검증 완료. 전체 검증은 CI(Docker 가용)가 보증한다.
+- **브라우저 E2E는 의도적 부재**: 웹 계층(쿠키 속성·CSRF·리다이렉트)은 웹 계층 통합 테스트가, 브라우저 DOM 배선은 M4 본인 실사용 + M5 배포 후 스모크(헬스체크 + 온보딩 1경로)가 담당한다. 도입 트리거 — ① UI 배선 회귀 2회 반복(수동 확인 실패의 증거) ② UI가 로직 보유(v2 정규식 편집기 — 이때 첫 단은 E2E가 아니라 프론트 컴포넌트 테스트) ③ 지인 온보딩(M5+)으로 실패의 외부 가시화.
