@@ -16,6 +16,7 @@
 - `Source`: 사용자가 등록한 수집처 엔티티 (예: "내 Canvas 캘린더" — config에 ical URL).
 - `Feed`: Source가 가리키는 외부 세계의 원본 문서 (ics 파일 그 자체).
 - `SourceItem`: Feed를 정규화한 개별 값 객체 — **소스가 말한 사실**의 진술.
+- `ItemKind`: SourceItem의 컴포넌트 유래 종별 사실 (VEVENT→EVENT, VTODO→TASK). 과제/일정의 의미 판별이 아니다 — 그것은 템플릿 규칙의 산출이다 ([ADR-0012](../adr/0012-source-shape-knowledge-in-templates.md)).
 - 차이점: Source는 영속 엔티티, Feed는 외부 문서, SourceItem은 실행 중에만 흐르는 값(영속되지 않음).
 
 ### 사실과 의도
@@ -43,7 +44,8 @@
 - `Match`: 필드 + 정규식 매칭 조건 (캡처 그룹 포함).
 - `Action`: 매치 시 행위 — `route`(Slot 지정 + Transform) 또는 `exclude`.
 - `Transform`: 캡처 치환으로 필드를 재작성하는 정의.
-- 차이점: Template은 배포 단위(코드), RuleSet은 사용자 데이터. 평가는 first-match-wins로 Rule 순서에 의존한다.
+- `RuleSetDefinition`: Template과 RuleSet이 공용하는 규칙 정의 값 객체 (version·rules·fallback — JSON 직렬화 형태). RuleEngine의 입력.
+- 차이점: Template은 배포 단위(코드), RuleSet은 사용자 데이터 — 둘 다 내용물은 RuleSetDefinition 하나로 표현된다. 평가는 first-match-wins로 Rule 순서에 의존한다.
 
 ### 인증 계열
 - `identity의 OAuth`: **인증** — 사용자가 누구인지 확인 (openid/email/profile, 가입 시).

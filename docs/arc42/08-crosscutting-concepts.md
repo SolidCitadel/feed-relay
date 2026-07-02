@@ -6,7 +6,7 @@
 // ingestion.api — 소스가 말한 "사실"
 data class SourceItem(
     val sourceUid: String,          // ical UID — 멱등성의 기준 키
-    val kind: ItemKind,             // EVENT, TASK — 의미 분류 (컴포넌트 타입 아님, 8.7 참조)
+    val kind: ItemKind,             // 컴포넌트 유래 사실 (VEVENT→EVENT, VTODO→TASK) — 과제/일정 판별은 템플릿 규칙 (ADR-0012)
     val title: String,
     val description: String?,
     val url: String?,
@@ -25,7 +25,7 @@ interface SourceAdapter {
 data class OutboundItem(val title: String, val notes: String?, val dueAt: Instant?, val url: String?)
 
 interface RuleEngine {
-    fun evaluate(item: SourceItem, ruleSet: RuleSet): RuleOutcome
+    fun evaluate(item: SourceItem, definition: RuleSetDefinition): RuleOutcome   // RuleSetDefinition: Template/RuleSet 공용 규칙 정의 VO (§12)
 }
 sealed interface RuleOutcome {
     data class Route(val slot: String, val outbound: OutboundItem) : RuleOutcome
@@ -47,17 +47,20 @@ interface DestinationAdapter {
 {
   "version": 1,
   "rules": [
-    { "id": "extract-course",
-      "match": { "field": "summary", "regex": "^(?<title>.+?)\\s*\\[(?<course>.+)\\]$" },
-      "action": { "type": "route", "slot": "${course}", "transform": { "title": "${title}" } } },
-    { "id": "drop-events",
-      "match": { "field": "kind", "regex": "^EVENT$" }, "action": { "type": "exclude" } }
+    { "id": "drop-calendar-events",
+      "match": { "field": "uid", "regex": "^event-calendar-event-" },
+      "action": { "type": "exclude" } },
+    { "id": "route-by-course",
+      "match": { "field": "summary", "regex": "^(?<title>.+?)\\s*\\[(?<course>[^\\[\\]]+)\\]$" },
+      "action": { "type": "route", "slot": "${course}", "transform": { "title": "${title}" } } }
   ],
   "fallback": { "type": "route", "slot": "_inbox" }
 }
 ```
 
-- first-match-wins. slot은 캡처 치환 결과, 구독의 `slot_mapping_json`이 slot→TargetRef 연결.
+- first-match-wins — 제외 규칙을 라우팅보다 위에 둔다(일정도 `[course_code]` SUMMARY를 갖기 때문, ADR-0012). `match.field`는 raw 키(소문자 ical 프로퍼티: uid·summary·description·…) + 정규화 필드(kind·title).
+- route의 OutboundItem 기본 구성: title = transform.title 치환(없으면 item.title), notes = item.description, dueAt = item.dueAt ?: item.startAt, url = item.url.
+- slot은 캡처 치환 결과, 구독의 `slot_mapping_json`이 slot→TargetRef 연결.
 - **ReDoS 가드**: 매칭 타임아웃(100ms)·입력 길이 제한을 엔진 차원에서 (v2 사용자 정규식 대비).
 
 ## 8.3 데이터 모델 (ERD)
@@ -105,7 +108,7 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
   - `SUMMARY = 제목 [course_code]` — 붙는 것은 과목 **코드**(코스의 course_code 필드). 인스턴스가 코드에 뭘 넣는지(한글 과목명 vs 학수번호)는 관측으로 확정 — 템플릿 정규식 조정으로 흡수
   - 과제: DTSTART=DTEND=due_at(DateTime, UTC). 종일 이벤트: DATE 타입 + DTEND 생략(RFC 5545) — 파서는 두 형태 모두 수용
   - DESCRIPTION은 HTML→텍스트 변환본, HTML 원본은 `X-ALT-DESC`에 보존
-- **kind는 의미 분류**: LMS는 과제도 VEVENT로 내보냄(주요 캘린더 앱의 VTODO 미지원 탓) → 과제/일정 판별은 UID 패턴(`assignment` 계열 → TASK). EVENT 제외해도 과제 누락 없음.
+- **판별은 템플릿 규칙** ([ADR-0012](../adr/0012-source-shape-knowledge-in-templates.md)): LMS는 과제도 VEVENT로 내보냄(주요 캘린더 앱의 VTODO 미지원 탓) → kind는 컴포넌트 유래 사실(Canvas 피드는 전부 EVENT), 과제/일정 판별은 canvas-v1의 uid 규칙(`^event-calendar-event-` → exclude)이 수행. 과제 누락 없음.
 - 검증 경로: 구현·테스트는 소스 유래 **fixture .ics**로, E2E는 Free-for-Teacher 계정(canvas.instructure.com) 실피드로 상시 가능. 학교 실피드(Canvas 확인됨) 차이는 학기 재개 시 템플릿 수정으로 흡수.
 - 능력 격차 흡수: Google Tasks due는 날짜만 → 시각·원본 링크는 notes에 보존.
 

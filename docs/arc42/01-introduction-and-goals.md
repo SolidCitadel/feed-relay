@@ -13,7 +13,7 @@
 
 - 동기화는 **단방향 생성+수정**: 완료·삭제된 항목 불개입(FROZEN), 규칙 변경 시 기존 항목 위치 유지·신규부터 적용 ([ADR-0003](../adr/0003-sync-semantics.md))
 - 매칭 안 된 항목·미매핑 slot은 `_inbox` 기본 리스트로 + 대시보드 알림 (누락 0 원칙)
-- 순수 일정성 항목(EVENT)은 v1 제외 — Google Calendar ical 구독이 이미 커버, 과제는 전부 TASK로 잡히므로 누락 없음
+- 순수 일정성 항목(일정)은 v1 제외 — Google Calendar ical 구독이 이미 커버. 제외는 템플릿 규칙이 수행하며 과제 누락 없음 ([ADR-0012](../adr/0012-source-shape-knowledge-in-templates.md))
 - 템플릿은 선택 시 사용자 소유로 복제(원본 key/version 기록), 업데이트는 신규 선택자에게만
 - UI는 최소 셀프서브 온보딩(로그인 → 소스 등록 → 템플릿 → 매핑 → 완료), 정규식 편집기는 v2
 
