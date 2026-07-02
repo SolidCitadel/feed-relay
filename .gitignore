@@ -1,11 +1,12 @@
 # Gradle
 .gradle/
-build/
+/build/
 !gradle/wrapper/gradle-wrapper.jar
 
 # Kotlin/Java
 *.class
-out/
+# IntelliJ 출력 디렉터리 — 루트 고정 (src의 헥사고날 adapter/out/과 충돌 방지)
+/out/
 
 # Node / frontend
 node_modules/

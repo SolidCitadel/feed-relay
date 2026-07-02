@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "rules": [
+    {
+      "id": "drop-calendar-events",
+      "match": { "field": "uid", "regex": "^event-calendar-event-" },
+      "action": { "type": "exclude" }
+    },
+    {
+      "id": "route-by-course",
+      "match": { "field": "summary", "regex": "^(?<title>.+?)\\s*\\[(?<course>[^\\[\\]]+)\\]$" },
+      "action": { "type": "route", "slot": "${course}", "transform": { "title": "${title}" } }
+    }
+  ],
+  "fallback": { "type": "route", "slot": "_inbox" }
+}
