@@ -100,9 +100,13 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
 
 ## 8.7 Canvas 템플릿 (canvas-v1)
 
-- 입력: Canvas 캘린더 피드(.ics). 알려진 형태 — VEVENT, `SUMMARY: 과제명 [과목명]`, UID `event-assignment-…`(과제)/`event-calendar-event-…`(일정), DTSTART=마감.
-- **kind는 의미 분류**: LMS는 과제도 VEVENT로 내보냄(주요 캘린더 앱의 VTODO 미지원 탓) → 과제/일정 판별은 UID·URL 패턴. EVENT 제외해도 과제 누락 없음.
-- ⚠️ 실피드 샘플 검증이 M1 첫 작업 — 사용자 학교 LMS는 Canvas(Instructure) 확인됨.
+- 입력: Canvas 캘린더 피드(.ics). 공식 문서에 피드 스키마 서술은 없음 — **스키마 원천은 canvas-lms 소스** ([`app/models/calendar_event.rb`의 `IcalEvent`](https://github.com/instructure/canvas-lms/blob/master/app/models/calendar_event.rb), 2026-07 확인):
+  - 전부 VEVENT (VTODO 없음). UID = `event-{모델명 케밥케이스}-{id}` — `event-assignment-…`(과제) / `event-sub-assignment-…`(체크포인트형 과제) / `event-calendar-event-…`(일정)
+  - `SUMMARY = 제목 [course_code]` — 붙는 것은 과목 **코드**(코스의 course_code 필드). 인스턴스가 코드에 뭘 넣는지(한글 과목명 vs 학수번호)는 관측으로 확정 — 템플릿 정규식 조정으로 흡수
+  - 과제: DTSTART=DTEND=due_at(DateTime, UTC). 종일 이벤트: DATE 타입 + DTEND 생략(RFC 5545) — 파서는 두 형태 모두 수용
+  - DESCRIPTION은 HTML→텍스트 변환본, HTML 원본은 `X-ALT-DESC`에 보존
+- **kind는 의미 분류**: LMS는 과제도 VEVENT로 내보냄(주요 캘린더 앱의 VTODO 미지원 탓) → 과제/일정 판별은 UID 패턴(`assignment` 계열 → TASK). EVENT 제외해도 과제 누락 없음.
+- 검증 경로: 구현·테스트는 소스 유래 **fixture .ics**로, E2E는 Free-for-Teacher 계정(canvas.instructure.com) 실피드로 상시 가능. 학교 실피드(Canvas 확인됨) 차이는 학기 재개 시 템플릿 수정으로 흡수.
 - 능력 격차 흡수: Google Tasks due는 날짜만 → 시각·원본 링크는 notes에 보존.
 
 ## 8.8 테스트 전략

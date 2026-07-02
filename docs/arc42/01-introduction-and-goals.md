@@ -35,7 +35,7 @@
 | 단계 | 내용 | 상태 |
 |---|---|---|
 | M0 | 스캐폴딩: Gradle+Modulith+React 통합, CI, Compose 기동 | ✅ 2026-07-03 |
-| M1 | 실피드 샘플 검증 → ical 파싱 → RuleEngine (멱등성 테스트 1급) | |
+| M1 | 소스 유래 스키마 fixture(§8.7) → ical 파싱 → RuleEngine (멱등성 테스트 1급) | |
 | M2 | Google 로그인 + 세션 + 대시보드 뼈대 | |
 | M3 | Tasks 어댑터 + SyncMapping + 파이프라인 E2E (수동 트리거) | |
 | M4 | 스케줄러 + 연동 마법사 완성 → 본인 실사용 | |
