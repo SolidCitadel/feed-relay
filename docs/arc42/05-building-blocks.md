@@ -30,7 +30,7 @@ com.feedrelay
 ## 의존 규칙 (Modulith 테스트로 강제 — `ModularityTests`)
 
 ```
-런타임 호출   : sync → ingestion, rules, delivery, connections  (조립은 sync만)
+런타임 호출   : sync → identity, ingestion, rules, delivery, connections  (조립은 sync만 — identity는 사용자 설정(타임존) 조회)
 계약 타입 의존: rules →(SourceItem)→ ingestion / delivery →(OutboundItem)→ rules
                파이프라인 방향으로만. 역방향 금지. shared 패키지 없음 — 계약은 생산자 소유.
 통지(이벤트)  : sync ⇢ RunCompleted·RunFailed (→ notifications)

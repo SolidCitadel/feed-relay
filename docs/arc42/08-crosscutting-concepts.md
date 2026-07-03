@@ -32,12 +32,12 @@ sealed interface RuleOutcome {
     object Exclude : RuleOutcome
 }
 
-// delivery.api
+// delivery.api — zone: 능력 격차 흡수(예: Tasks due 날짜 변환)에 쓰는 사용자 타임존 (§8.7)
 interface DestinationAdapter {
     val type: DestinationType                             // GOOGLE_TASKS (추후 TODOIST, GOOGLE_CALENDAR)
     fun snapshot(token: BearerToken, target: TargetRef): DestinationSnapshot   // 리스트당 1콜
-    fun create(token: BearerToken, target: TargetRef, item: OutboundItem): ExternalRef
-    fun update(token: BearerToken, ref: ExternalRef, item: OutboundItem)
+    fun create(token: BearerToken, target: TargetRef, item: OutboundItem, zone: ZoneId): ExternalRef
+    fun update(token: BearerToken, ref: ExternalRef, item: OutboundItem, zone: ZoneId)
 }
 ```
 
@@ -66,7 +66,7 @@ interface DestinationAdapter {
 ## 8.3 데이터 모델 (ERD)
 
 ```
-users          (id PK, google_sub UNIQUE, email, display_name, created_at)
+users          (id PK, google_sub UNIQUE, email, display_name, timezone, created_at)
 connections    (id PK, user_id FK, provider, scopes, access_token_enc, refresh_token_enc, expires_at, status)
 sources        (id PK, user_id FK, type, name, config_json, status)
 rule_sets      (id PK, user_id FK, origin_template_key, origin_template_version, definition_json, …)
@@ -80,7 +80,7 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
 
 - PK는 전 테이블 `bigint GENERATED ALWAYS AS IDENTITY` ([ADR-0013](../adr/0013-bigint-identity-pk.md)) — 공개 노출 리소스가 생기면 그 리소스에만 public token 칼럼 추가.
 - 테이블 소유권: §5 표. 다른 모듈 테이블은 FK id 참조만 — 직접 조인·쓰기 금지.
-- **content_hash = SHA-256(OutboundItem + TargetRef)** — 변환 후 기준. transform 변경은 내용만 갱신, 위치는 external_ref가 고정 (ADR-0003).
+- **content_hash = SHA-256(OutboundItem + TargetRef)** — 변환 후 기준. 직렬화 규약: `v1` 프리픽스 + 필드별 length-prefix(title·notes·dueAt·url·tasklistId 순, null 전용 마커) — 구분자 충돌 차단·결정론 보장. dueAt은 Instant 그대로 포함(시각만 바뀌어도 update → notes의 시각 표기가 낡지 않음). transform 변경은 내용만 갱신, 위치는 external_ref가 고정 (ADR-0003).
 - 템플릿은 DB가 아니라 리소스 파일(JSON) — 선택 시 rule_sets로 복제.
 
 ## 8.4 영속성
@@ -93,6 +93,7 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
 
 - 인증: Google OAuth — identity(로그인: openid/email/profile)와 connections(위임: tasks, incremental+offline)는 다른 관심사 ([§12 인증 계열](12-glossary.md)). users는 google_sub 기준 upsert, email·display_name은 매 로그인 클레임으로 동기화(구글이 진실 원천, 로컬 편집 없음).
 - 미인증 시맨틱: `/api/**`는 302 로그인 리다이렉트가 아니라 **401** — 로그인 진입은 SPA가 `/oauth2/authorization/google`로 명시 이동.
+- 위임 플로우: 별도 ClientRegistration(`google-tasks`, scope=tasks)의 authorization-code 왕복 — `access_type=offline&prompt=consent&include_granted_scopes=true`(incremental). 발급된 refresh token은 connections가 AES-256-GCM(랜덤 IV, `base64(iv‖ct‖tag)`, 키는 .env `TOKEN_ENC_KEY`)으로 보관.
 - 세션: 쿠키 host-only + Secure + SameSite=Lax (PSL 미등재 무료 도메인 대비 상위 도메인 쿠키 금지). Spring Session JDBC(M2) — 재배포에도 유지.
 - CSRF: SPA + 세션 쿠키 → XSRF-TOKEN 쿠키 방식.
 - 토큰 보관: refresh_token AES-GCM 암호화, 키는 환경변수(.env — 저장소 밖).
@@ -112,7 +113,7 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
   - DESCRIPTION은 HTML→텍스트 변환본, HTML 원본은 `X-ALT-DESC`에 보존
 - **판별은 템플릿 규칙** ([ADR-0012](../adr/0012-source-shape-knowledge-in-templates.md)): LMS는 과제도 VEVENT로 내보냄(주요 캘린더 앱의 VTODO 미지원 탓) → kind는 컴포넌트 유래 사실(Canvas 피드는 전부 EVENT), 과제/일정 판별은 canvas-v1의 uid 규칙(`^event-calendar-event-` → exclude)이 수행. 과제 누락 없음.
 - 검증 경로: 구현·테스트는 소스 유래 **fixture .ics**로, E2E는 Free-for-Teacher 계정(canvas.instructure.com) 실피드로 상시 가능. 학교 실피드(Canvas 확인됨) 차이는 학기 재개 시 템플릿 수정으로 흡수.
-- 능력 격차 흡수: Google Tasks due는 날짜만 → 시각·원본 링크는 notes에 보존.
+- 능력 격차 흡수: Google Tasks due는 날짜만 → 사용자 타임존(users.timezone)으로 날짜 변환, 시각·원본 링크는 notes에 보존(§1 관리 필드 정책 — 갱신 시 덮어씀).
 
 ## 8.8 테스트 전략
 
