@@ -15,6 +15,7 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint
 import org.springframework.security.web.authentication.HttpStatusEntryPoint
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler
 import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler
 import org.springframework.security.web.authentication.www.BasicAuthenticationFilter
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository
@@ -22,6 +23,7 @@ import org.springframework.security.web.csrf.CsrfToken
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler
 import org.springframework.security.web.csrf.CsrfTokenRequestHandler
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler
+import org.springframework.security.web.savedrequest.NullRequestCache
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 import org.springframework.util.StringUtils
 import org.springframework.web.filter.OncePerRequestFilter
@@ -48,6 +50,13 @@ class SecurityConfig {
                 userInfoEndpoint {
                     this.oidcUserService = oidcUserService
                 }
+                // SPA — 로그인 성공은 항상 대시보드로 (saved request 재생 안 함)
+                authenticationSuccessHandler = SimpleUrlAuthenticationSuccessHandler("/dashboard")
+            }
+            requestCache {
+                // 보호 대상이 /api/**뿐(내비게이션 경로는 전부 SPA 셸)이라 저장할 요청이 없다
+                // — 기본 캐시는 /api/me를 저장해 로그인 후 JSON으로 리다이렉트시킨다
+                requestCache = NullRequestCache()
             }
             logout {
                 logoutSuccessHandler = HttpStatusReturningLogoutSuccessHandler(HttpStatus.NO_CONTENT) // SPA — 리다이렉트 없이 204
