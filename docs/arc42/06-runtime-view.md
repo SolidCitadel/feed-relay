@@ -24,7 +24,7 @@
 ## 6.2 온보딩 (React가 플로우 조립 — 각 단계 = 한 모듈)
 
 ```
-가입      : Google OAuth(openid,email,profile) → identity: users upsert → 세션
+가입      : Google OAuth(openid,email,profile) → identity: users upsert(google_sub 기준, 프로필은 매 로그인 동기화) → 세션
 소스 등록 : ical URL → ingestion: fetch·검증 → 항목 미리보기
 템플릿    : rules: Canvas 템플릿 시험 적용 → 과목(slot 후보) 자동 추출
 대상 연결 : connections: incremental consent(scope=tasks, access_type=offline)

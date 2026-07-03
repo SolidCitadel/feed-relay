@@ -78,6 +78,7 @@ sync_mappings  (id PK, subscription_id FK, source_uid, external_ref, content_has
 run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCCESS|PARTIAL|FAILED], stats_json, error_summary)
 ```
 
+- PK는 전 테이블 `bigint GENERATED ALWAYS AS IDENTITY` ([ADR-0013](../adr/0013-bigint-identity-pk.md)) — 공개 노출 리소스가 생기면 그 리소스에만 public token 칼럼 추가.
 - 테이블 소유권: §5 표. 다른 모듈 테이블은 FK id 참조만 — 직접 조인·쓰기 금지.
 - **content_hash = SHA-256(OutboundItem + TargetRef)** — 변환 후 기준. transform 변경은 내용만 갱신, 위치는 external_ref가 고정 (ADR-0003).
 - 템플릿은 DB가 아니라 리소스 파일(JSON) — 선택 시 rule_sets로 복제.
@@ -90,7 +91,8 @@ run_logs       (id PK, subscription_id FK, started_at, finished_at, result [SUCC
 
 ## 8.5 보안
 
-- 인증: Google OAuth — identity(로그인: openid/email/profile)와 connections(위임: tasks, incremental+offline)는 다른 관심사 ([§12 인증 계열](12-glossary.md)).
+- 인증: Google OAuth — identity(로그인: openid/email/profile)와 connections(위임: tasks, incremental+offline)는 다른 관심사 ([§12 인증 계열](12-glossary.md)). users는 google_sub 기준 upsert, email·display_name은 매 로그인 클레임으로 동기화(구글이 진실 원천, 로컬 편집 없음).
+- 미인증 시맨틱: `/api/**`는 302 로그인 리다이렉트가 아니라 **401** — 로그인 진입은 SPA가 `/oauth2/authorization/google`로 명시 이동.
 - 세션: 쿠키 host-only + Secure + SameSite=Lax (PSL 미등재 무료 도메인 대비 상위 도메인 쿠키 금지). Spring Session JDBC(M2) — 재배포에도 유지.
 - CSRF: SPA + 세션 쿠키 → XSRF-TOKEN 쿠키 방식.
 - 토큰 보관: refresh_token AES-GCM 암호화, 키는 환경변수(.env — 저장소 밖).
