@@ -3,7 +3,7 @@
 > LMS가 ical 피드로만 내보내는 과제를, 과목별로 분류된 **체크 가능한 할 일**로 바꿔주는 서비스.
 > 다양한 소스(v1: ical)의 항목을 정규식 규칙(템플릿)으로 분류·변환해 캘린더/Todo 앱(v1: Google Tasks)에 단방향 동기화한다.
 
-🚧 **개발 중** — M0(스캐폴딩) 완료 · 로드맵: [arc42 §1](docs/arc42/01-introduction-and-goals.md)
+🚧 **개발 중** — M3까지 완료(로그인·위임·파이프라인 수동 실행), 다음은 M4(스케줄러·온보딩 마법사) · 로드맵: [arc42 §1](docs/arc42/01-introduction-and-goals.md)
 
 ## 왜 만드나
 
@@ -31,7 +31,7 @@ Kotlin · Spring Boot(Modulith) · React(Vite) · PostgreSQL · Docker Compose
 요구사항: **JDK 21 · Node 24+ · Docker**(통합 테스트·전체 기동 시)
 
 ```bash
-cp .env.example .env            # Google OAuth 클라이언트 채우기 (로그인 기능에 필요 — 파일 내 안내)
+cp .env.example .env            # Google OAuth 클라이언트·토큰 암호화 키 채우기 (파일 내 안내)
 docker compose up -d postgres   # DB 기동
 ./gradlew bootRun               # 백엔드 + 프론트 (동일 오리진, :8080)
 ```
@@ -49,7 +49,7 @@ cd frontend && npm run dev                        # 프론트 개발 서버 (:51
 | 위치 | 내용 |
 |---|---|
 | [docs/arc42/](docs/arc42/) | 아키텍처 문서 (arc42 골격) — [§1](docs/arc42/01-introduction-and-goals.md) 목표·제품 정책·로드맵 · [§5](docs/arc42/05-building-blocks.md) 모듈 구조 · [§6](docs/arc42/06-runtime-view.md) 런타임 · [§8](docs/arc42/08-crosscutting-concepts.md) 도메인 모델·보안 · [§10](docs/arc42/10-quality-requirements.md) 품질 시나리오 · [§11](docs/arc42/11-risks-and-technical-debt.md) 리스크 · [§12](docs/arc42/12-glossary.md) 용어 |
-| [docs/adr/](docs/adr/) | 아키텍처 결정 기록(ADR) 11건 — 각 결정의 맥락·검토한 대안·근거·재검토 트리거 |
+| [docs/adr/](docs/adr/) | 아키텍처 결정 기록(ADR) — 각 결정의 맥락·검토한 대안·근거·재검토 트리거 |
 
 ## 라이선스
 
