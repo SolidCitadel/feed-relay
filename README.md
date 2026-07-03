@@ -31,6 +31,7 @@ Kotlin · Spring Boot(Modulith) · React(Vite) · PostgreSQL · Docker Compose
 요구사항: **JDK 21 · Node 24+ · Docker**(통합 테스트·전체 기동 시)
 
 ```bash
+cp .env.example .env            # Google OAuth 클라이언트 채우기 (로그인 기능에 필요 — 파일 내 안내)
 docker compose up -d postgres   # DB 기동
 ./gradlew bootRun               # 백엔드 + 프론트 (동일 오리진, :8080)
 ```

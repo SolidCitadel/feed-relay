@@ -1,6 +1,20 @@
 spring:
   application:
     name: feedrelay
+  config:
+    # 로컬 개발용 .env 로드 (KEY=VALUE ⊂ properties 문법) — OS 환경변수가 항상 우선
+    import: optional:file:./.env[.properties]
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:dummy-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:dummy-client-secret}
+            scope: openid,profile,email
+  session:
+    jdbc:
+      initialize-schema: always  # 프레임워크 부속 테이블은 프레임워크 소유 (ADR-0009 원칙)
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/feedrelay}
     username: ${DB_USERNAME:feedrelay}

@@ -1,6 +1,6 @@
 # 로컬 개발: postgres만 기동 후 ./gradlew bootRun 권장 (README 참조)
 # 전체 기동: ./gradlew bootJar && docker compose up --build
-# 배포용 엣지(caddy) compose는 별도 계층 — M5에서 infra/ 로 분리 (docs/01-design.md 8절)
+# 배포용 엣지(caddy) compose는 별도 계층 — M5에서 infra/ 로 분리 (docs/arc42/07-deployment-view.md)
 services:
   postgres:
     image: postgres:17-alpine
@@ -26,6 +26,8 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/feedrelay
       DB_USERNAME: feedrelay
       DB_PASSWORD: feedrelay
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-client-secret}
     depends_on:
       postgres:
         condition: service_healthy
