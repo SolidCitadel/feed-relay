@@ -17,5 +17,7 @@ class UserPersistenceAdapter(
 
     override fun findByGoogleSub(googleSub: String): User? = repository.findByGoogleSub(googleSub)
 
+    override fun findById(id: Long): User? = repository.findById(id).orElse(null)
+
     override fun save(user: User): User = repository.save(user)
 }

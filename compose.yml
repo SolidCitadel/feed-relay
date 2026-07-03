@@ -28,6 +28,7 @@ services:
       DB_PASSWORD: feedrelay
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-dummy-client-id}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-dummy-client-secret}
+      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy

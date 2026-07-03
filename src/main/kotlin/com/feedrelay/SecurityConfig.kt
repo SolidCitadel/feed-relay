@@ -9,7 +9,11 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.invoke
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.DelegatingAuthenticationEntryPoint
@@ -31,10 +35,36 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Configuration
 class SecurityConfig {
 
+    /**
+     * 위임(google-tasks) 인가 요청에만 offline·재동의·incremental 파라미터를 추가한다 (§8.5).
+     * 로그인(google)과 위임이 같은 /oauth2/authorization 진입을 공유하므로 리졸버는 하나로 통일.
+     */
+    @Bean
+    fun authorizationRequestResolver(
+        clientRegistrationRepository: ClientRegistrationRepository,
+    ): OAuth2AuthorizationRequestResolver {
+        val resolver = DefaultOAuth2AuthorizationRequestResolver(clientRegistrationRepository, "/oauth2/authorization")
+        resolver.setAuthorizationRequestCustomizer { builder ->
+            builder.attributes { attrs ->
+                if (attrs[OAuth2ParameterNames.REGISTRATION_ID] == "google-tasks") {
+                    builder.additionalParameters(
+                        mapOf(
+                            "access_type" to "offline",
+                            "prompt" to "consent",
+                            "include_granted_scopes" to "true",
+                        ),
+                    )
+                }
+            }
+        }
+        return resolver
+    }
+
     @Bean
     fun securityFilterChain(
         http: HttpSecurity,
         oidcUserService: OAuth2UserService<OidcUserRequest, OidcUser>,
+        authorizationRequestResolver: OAuth2AuthorizationRequestResolver,
     ): SecurityFilterChain {
         http {
             authorizeHttpRequests {
@@ -50,8 +80,18 @@ class SecurityConfig {
                 userInfoEndpoint {
                     this.oidcUserService = oidcUserService
                 }
+                authorizationEndpoint {
+                    this.authorizationRequestResolver = authorizationRequestResolver
+                }
                 // SPA — 로그인 성공은 항상 대시보드로 (saved request 재생 안 함)
                 authenticationSuccessHandler = SimpleUrlAuthenticationSuccessHandler("/dashboard")
+            }
+            oauth2Client {
+                // 위임(google-tasks) authorization-code 왕복 — 콜백 처리는 프레임워크,
+                // 토큰 저장은 connections의 캡처 저장소 빈(OAuth2AuthorizedClientRepository)이 담당
+                authorizationCodeGrant {
+                    this.authorizationRequestResolver = authorizationRequestResolver
+                }
             }
             requestCache {
                 // 보호 대상이 /api/**뿐(내비게이션 경로는 전부 SPA 셸)이라 저장할 요청이 없다

@@ -12,8 +12,14 @@ class UserServiceTests {
 
     private class InMemoryUserStore : LoadUserPort, SaveUserPort {
         val byGoogleSub = mutableMapOf<String, User>()
+        private var nextId = 1L
         override fun findByGoogleSub(googleSub: String): User? = byGoogleSub[googleSub]
+        override fun findById(id: Long): User? = byGoogleSub.values.firstOrNull { it.id == id }
         override fun save(user: User): User {
+            if (user.id == null) {
+                // JPA identity 생성 흉내 — id는 val이라 리플렉션으로 부여
+                User::class.java.getDeclaredField("id").apply { isAccessible = true }.set(user, nextId++)
+            }
             byGoogleSub[user.googleSub] = user
             return user
         }
@@ -54,5 +60,16 @@ class UserServiceTests {
         val view = service.findByGoogleSub("sub-1")
         assertEquals("a@example.com", view?.email)
         assertNull(view?.displayName)
+    }
+
+    @Test
+    fun `타임존 기본값은 KST이고 변경 가능하다 - 재로그인에도 유지`() {
+        service.upsert(UpsertUserCommand("sub-1", "a@example.com", "홍길동"))
+        assertEquals("Asia/Seoul", service.findByGoogleSub("sub-1")?.timezone)
+
+        service.update("sub-1", java.time.ZoneId.of("America/New_York"))
+        service.upsert(UpsertUserCommand("sub-1", "a@example.com", "홍길동")) // 재로그인 동기화
+
+        assertEquals("America/New_York", service.findByGoogleSub("sub-1")?.timezone)
     }
 }

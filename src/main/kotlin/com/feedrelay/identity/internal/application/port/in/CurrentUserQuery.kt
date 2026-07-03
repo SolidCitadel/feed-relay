@@ -8,4 +8,5 @@ interface CurrentUserQuery {
 data class UserView(
     val email: String,
     val displayName: String?,
+    val timezone: String,
 )
