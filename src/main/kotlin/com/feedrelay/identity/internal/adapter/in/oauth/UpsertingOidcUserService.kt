@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserService
 import org.springframework.security.oauth2.core.oidc.user.OidcUser
 import org.springframework.stereotype.Component
+import java.io.Serializable
 
 /**
  * OIDC 로그인 성공 시 users를 upsert하고, principal에 userId를 심는 인바운드 어댑터 (§6.2 가입).
@@ -33,8 +34,11 @@ class UpsertingOidcUserService(
     }
 }
 
-/** userId가 강화된 세션 주체 — 각 모듈 웹 어댑터가 AuthenticatedUser로 캐스팅해 사용 */
-private class EnrichedOidcUser(
-    delegate: OidcUser,
+/**
+ * userId가 강화된 세션 주체 — 각 모듈 웹 어댑터가 AuthenticatedUser로 캐스팅해 사용.
+ * 세션이 JDBC 저장(JDK 직렬화)이므로 Serializable 필수 — 회귀 테스트로 고정.
+ */
+internal class EnrichedOidcUser(
+    private val delegate: OidcUser,
     override val userId: Long,
-) : OidcUser by delegate, AuthenticatedUser
+) : OidcUser by delegate, AuthenticatedUser, Serializable
