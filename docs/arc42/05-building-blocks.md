@@ -37,6 +37,8 @@ com.feedrelay
                connections ⇢ ConnectionRevoked (→ sync)
                발행자는 수신자를 모른다. 이벤트 타입은 발행자 api 소속.
 delivery ─X─ connections : 토큰은 sync가 값으로 전달 (갱신 책임은 connections)
+인증 주체     : identity가 로그인 시 principal에 userId를 강화(api의 AuthenticatedUser) —
+               각 모듈 웹 어댑터는 캐스팅으로 참조, identity 런타임 호출 불필요
 ```
 
 ## Level 2 — 모듈 내부 (전 모듈 동일, 정식형 헥사고날)

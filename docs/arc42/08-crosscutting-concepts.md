@@ -38,6 +38,8 @@ interface DestinationAdapter {
     fun snapshot(token: BearerToken, target: TargetRef): DestinationSnapshot   // 리스트당 1콜
     fun create(token: BearerToken, target: TargetRef, item: OutboundItem, zone: ZoneId): ExternalRef
     fun update(token: BearerToken, ref: ExternalRef, item: OutboundItem, zone: ZoneId)
+    fun listTargets(token: BearerToken): List<TargetInfo>                    // 슬롯 매핑 준비 (§6.2)
+    fun createTarget(token: BearerToken, name: String): TargetRef
 }
 ```
 

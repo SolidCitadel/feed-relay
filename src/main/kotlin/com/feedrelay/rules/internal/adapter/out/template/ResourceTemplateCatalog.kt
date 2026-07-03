@@ -2,6 +2,7 @@ package com.feedrelay.rules.internal.adapter.out.template
 
 import com.feedrelay.rules.api.RuleSetDefinition
 import org.springframework.core.io.ClassPathResource
+import org.springframework.core.io.support.PathMatchingResourcePatternResolver
 import org.springframework.stereotype.Component
 import tools.jackson.databind.ObjectMapper
 
@@ -12,9 +13,20 @@ import tools.jackson.databind.ObjectMapper
 @Component
 class ResourceTemplateCatalog(private val objectMapper: ObjectMapper) {
 
-    fun load(key: String): RuleSetDefinition {
+    fun load(key: String): RuleSetDefinition = parse(loadRaw(key))
+
+    /** 복제 저장용 원문 — 저장되는 definition_json은 템플릿 파일 내용 그대로 */
+    fun loadRaw(key: String): String {
         val resource = ClassPathResource("rule-templates/$key.json")
         require(resource.exists()) { "알 수 없는 템플릿: $key" }
-        return resource.inputStream.use { objectMapper.readValue(it, RuleSetDefinition::class.java) }
+        return resource.inputStream.use { it.readAllBytes().decodeToString() }
     }
+
+    fun parse(definitionJson: String): RuleSetDefinition =
+        objectMapper.readValue(definitionJson, RuleSetDefinition::class.java)
+
+    fun keys(): List<String> =
+        PathMatchingResourcePatternResolver().getResources("classpath:rule-templates/*.json")
+            .mapNotNull { it.filename?.removeSuffix(".json") }
+            .sorted()
 }
